@@ -40,6 +40,7 @@ while True:
         outputdata = 'HTTP/1.1 404 Not Found\r\n\r\n'
    
     #Close client socket
+    connectionSocket.close()
 
 serverSocket.close()
 sys.exit()#Terminate the program after sending the corresponding data
