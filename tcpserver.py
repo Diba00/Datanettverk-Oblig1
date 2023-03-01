@@ -1,3 +1,5 @@
+"""
+
 #import socket module
 from socket import *
 import sys # In order to terminate the program
@@ -42,54 +44,48 @@ while True:
 
 serverSocket.close()
 sys.exit()#Terminate the program after sending the corresponding data
-
 """
-
-#import socket module
+# Import necessary modules
 from socket import *
 import sys
-serverSocket = socket(AF_INET, SOCK_STREAM)
+import threading
 
-#Prepare a sever socket
-serverPort = 1200
-serverHost = ''
-serverSocket.bind((serverHost, serverPort))
-serverSocket.listen(1)
-
-while True:
-    #Establish the connection
-    
-    print('Ready to serve...')
-    connectionSocket, addr = serverSocket.accept()
-   
+# Define a function to handle each client request
+def handle_request(connectionSocket):
     try:
-        message = connectionSocket.recv(1024)
+        message = connectionSocket.recv(4096).decode()
+        print(message)
         filename = message.split()[1]
         f = open(filename[1:])
         outputdata = f.read()
-        
-        f.close()
-        
-        #Send one HTTP header line into socket
-        outputdata = 'HTTP/1.1 200 OK\r\n\r\n' + outputdata
-        
-        #Send the content of the requested file to the client
-        
+        f.close() 
+        responseHTTP = "HTTP/1.1 200 OK \r\nContent-Type: text/html\r\nContent-Lenght: " +str(len(outputdata)) + "\r\n\r\n"
+        connectionSocket.send(responseHTTP.encode()) 
         for i in range(0, len(outputdata)):
             connectionSocket.send(outputdata[i].encode())
+        connectionSocket.send("\r\n\r\n".encode()) 
         connectionSocket.close()
-
-        print("OK!")
-        
     except IOError:
-        #Send response message for file not found
-        outputdata = 'HTTP/1.1 404 Not Found\r\n\r\n'
-        
-        #Close client socket
-        for i in range(0, len(outputdata)):
-            connectionSocket.send(outputdata[i].encode())
+        response = 'HTTP/1.1 404 Not Found\r\n\r\n'
+        connectionSocket.sendall(response.encode())
         connectionSocket.close()
 
+# Create the main thread to listen for client connections
+serverSocket = socket(AF_INET, SOCK_STREAM)
+server_port = 1269
+serverSocket.bind(("", server_port))
+serverSocket.listen(1)
+
+while True:
+    # Wait for a client to connect
+    print('Ready to serve...')
+    connectionSocket, addr = serverSocket.accept()
+    print("du er inne")
+
+    # Create a new thread to handle the client request
+    t = threading.Thread(target=handle_request, args=(connectionSocket,))
+    t.start()
+
+# Close the server socket and exit the program
 serverSocket.close()
-sys.exit()#Terminate the program after sending the corresponding data
-"""
+sys.exit()
